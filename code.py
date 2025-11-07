@@ -29,11 +29,38 @@ pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.3, auto_write=False)
 led_a2 = DigitalInOut(board.A2)
 led_a2.direction = Direction.OUTPUT
 
-# Connect to WiFi
-print(f"Connecting to {WIFI_SSID}...")
+# Helper function for color wheel
+def wheel(pos):
+    # Input a value 0 to 255 to get a color value.
+    # The colours are a transition r - g - b - back to r.
+    if pos < 0 or pos > 255:
+        return (0, 0, 0)
+    if pos < 85:
+        return (255 - pos * 3, pos * 3, 0)
+    if pos < 170:
+        pos -= 85
+        return (0, 255 - pos * 3, pos * 3)
+    pos -= 170
+    return (pos * 3, 0, 255 - pos * 3)
+
+# Stage 1: Initializing - Red
+print("Stage 1: Initializing...")
+pixel[0] = (255, 0, 0)
+pixel.show()
+time.sleep(0.5)
+
+# Stage 2: Connecting to WiFi - Yellow
+print(f"Stage 2: Connecting to {WIFI_SSID}...")
+pixel[0] = (255, 255, 0)
+pixel.show()
 wifi.radio.connect(WIFI_SSID, WIFI_PASSWORD)
 print(f"Connected to {WIFI_SSID}!")
 print(f"IP address: {wifi.radio.ipv4_address}")
+
+# Stage 3: Setting up MQTT - Blue
+print("Stage 3: Setting up MQTT...")
+pixel[0] = (0, 0, 255)
+pixel.show()
 
 # Create a socket pool
 pool = socketpool.SocketPool(wifi.radio)
@@ -80,13 +107,28 @@ mqtt_client.subscribe(MQTT_TOPIC_NEOPIXEL)
 mqtt_client.subscribe(MQTT_TOPIC_A2)
 print("Subscribed to MQTT topics")
 
-# Main loop
+# Stage 4: Ready - Green
+print("Stage 4: Ready! Starting color wheel...")
+pixel[0] = (0, 255, 0)
+pixel.show()
+time.sleep(1)
+
+# Main loop - Color wheel with MQTT monitoring
+color_position = 0
 while True:
     try:
+        # Update color wheel
+        pixel[0] = wheel(color_position)
+        pixel.show()
+        color_position = (color_position + 1) % 256
+        
+        # Check for MQTT messages
         mqtt_client.loop()
-        time.sleep(0.01)
+        time.sleep(0.05)
     except Exception as e:
         print(f"Error: {e}")
+        pixel[0] = (255, 0, 0)  # Red on error
+        pixel.show()
         time.sleep(5)
         try:
             mqtt_client.reconnect()
