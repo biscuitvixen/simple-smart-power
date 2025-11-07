@@ -1,0 +1,11 @@
+name: usb-simplepower
+prefix: ./ENV
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - mpremote
+      - circup
+      - adafruit-ampy
