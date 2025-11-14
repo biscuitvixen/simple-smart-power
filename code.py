@@ -1,11 +1,12 @@
+import os
 import time
+
+import adafruit_minimqtt.adafruit_minimqtt as MQTT
 import board
 import neopixel
-import wifi
 import socketpool
-import adafruit_minimqtt.adafruit_minimqtt as MQTT
+import wifi
 from digitalio import DigitalInOut, Direction
-import os
 
 # Get credentials from settings.toml
 try:
@@ -29,6 +30,7 @@ pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.3, auto_write=False)
 led_a2 = DigitalInOut(board.A2)
 led_a2.direction = Direction.OUTPUT
 
+
 # Helper function for color wheel
 def wheel(pos):
     # Input a value 0 to 255 to get a color value.
@@ -42,6 +44,7 @@ def wheel(pos):
         return (0, 255 - pos * 3, pos * 3)
     pos -= 170
     return (pos * 3, 0, 255 - pos * 3)
+
 
 # Stage 1: Initializing - Red
 print("Stage 1: Initializing...")
@@ -65,10 +68,11 @@ pixel.show()
 # Create a socket pool
 pool = socketpool.SocketPool(wifi.radio)
 
+
 # MQTT callback function
 def message_received(client, topic, message):
     print(f"Topic: {topic}, Message: {message}")
-    
+
     if topic == MQTT_TOPIC_NEOPIXEL:
         # Expected format: "R,G,B" or "off"
         if message.lower() == "off":
@@ -80,7 +84,7 @@ def message_received(client, topic, message):
             except:
                 print("Invalid NeoPixel color format")
         pixel.show()
-    
+
     elif topic == MQTT_TOPIC_A2:
         # Expected format: "on" or "off"
         if message.lower() == "on":
@@ -88,12 +92,9 @@ def message_received(client, topic, message):
         elif message.lower() == "off":
             led_a2.value = False
 
+
 # Set up MQTT client
-mqtt_client = MQTT.MQTT(
-    broker=MQTT_BROKER,
-    port=MQTT_PORT,
-    socket_pool=pool
-)
+mqtt_client = MQTT.MQTT(broker=MQTT_BROKER, port=MQTT_PORT, socket_pool=pool)
 
 # Set up callback
 mqtt_client.on_message = message_received
@@ -121,7 +122,7 @@ while True:
         pixel[0] = wheel(color_position)
         pixel.show()
         color_position = (color_position + 1) % 256
-        
+
         # Check for MQTT messages
         mqtt_client.loop()
         time.sleep(0.05)
