@@ -1,0 +1,40 @@
+{
+    "python.languageServer": "Pylance",
+    "python.defaultInterpreterPath": "${workspaceFolder}/ENV/bin/python",
+    "python.terminal.activateEnvironment": true,
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingModuleSource": "none",
+        "reportShadowedImports": "none"
+    },
+    "python.analysis.extraPaths": [
+        "",
+        "/home/biscuit/.vscode/extensions/joedevivo.vscode-circuitpython-0.2.0-linux-x64/stubs",
+        "/home/biscuit/.config/Code/User/globalStorage/joedevivo.vscode-circuitpython/bundle/20251114/adafruit-circuitpython-bundle-py-20251114/lib"
+    ],
+    "circuitpython.board.version": null,
+    "circuitpython.board.vid": "239A",
+    "circuitpython.board.pid": "8112",
+    "files.watcherExclude": {
+        "**/ENV/**": true,
+        "**/lib/**": true
+    },
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true
+    },
+    "editor.formatOnSave": true,
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit",
+            "source.fixAll": "explicit"
+        }
+    },
+    "ruff.lint.select": [
+        "E",
+        "F",
+        "I"
+    ],
+    "ruff.format.docstringCodeFormat": true
+}

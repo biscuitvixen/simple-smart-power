@@ -1,0 +1,30 @@
+[tool.ruff]
+# Line length matching Black's default
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable specific rule categories
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "UP",  # pyupgrade (modern Python syntax)
+    "B",   # flake8-bugbear (common bugs)
+    "SIM", # flake8-simplify (simplification suggestions)
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",  # Line too long (formatter handles this)
+]
+
+[tool.ruff.format]
+# Use double quotes for strings
+quote-style = "double"
+
+# Use spaces for indentation
+indent-style = "space"
+
+# Format code in docstrings
+docstring-code-format = true

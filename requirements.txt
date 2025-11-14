@@ -1,0 +1,17 @@
+# CircuitPython Library Dependencies
+# Install these using: circup install --auto --auto-file code.py
+# Or manually with: circup install <library-name>
+
+# Required for NeoPixel control
+adafruit-circuitpython-neopixel
+
+# Required for MQTT communication
+adafruit-circuitpython-minimqtt
+
+# Required for network connection management
+adafruit-circuitpython-connectionmanager
+
+# Required for timing utilities
+adafruit-circuitpython-ticks
+
+# Add additional libraries as needed below
