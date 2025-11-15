@@ -14,13 +14,12 @@ try:
     WIFI_PASSWORD = os.getenv("CIRCUITPY_WIFI_PASSWORD")
     MQTT_BROKER = os.getenv("MQTT_BROKER")
     MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
+    BOARD_ID = os.getenv("BOARD_ID")  # Unique identifier for this board
+    # Build MQTT topic from board ID, or use explicit topic if provided
+    MQTT_TOPIC = os.getenv("MQTT_TOPIC") or f"home/light/{BOARD_ID}"
 except:
     print("Settings are kept in settings.toml, please add them there!")
     raise
-
-# MQTT topics
-MQTT_TOPIC_NEOPIXEL = "home/neopixel"
-MQTT_TOPIC_A2 = "home/led_a2"
 
 # Initialize the NeoPixel on the QT Py ESP32-S2
 # The built-in NeoPixel is on pin NEOPIXEL
