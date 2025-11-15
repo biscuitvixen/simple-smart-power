@@ -88,24 +88,59 @@ screen /dev/ttyACM0 115200
 
 ## MQTT Control
 
-Send messages to these topics to control your device:
-
-### NeoPixel Control
-**Topic:** `home/neopixel`
-
-**Commands:**
-- `"255,0,0"` - Set to red (R,G,B format)
-- `"0,255,0"` - Set to green
-- `"0,0,255"` - Set to blue
-- `"255,128,0"` - Set to orange
-- `"off"` - Turn off
+The device uses JSON schema for MQTT communication with Home Assistant.
 
 ### LED Control (A2 Pin)
-**Topic:** `home/led_a2`
+**Command Topic:** `home/light/{BOARD_ID}/set`  
+**State Topic:** `home/light/{BOARD_ID}/state`
 
-**Commands:**
-- `"on"` - Turn LED on
-- `"off"` - Turn LED off
+**Commands (JSON):**
+```json
+{"state": "ON"}                    // Turn on
+{"state": "OFF"}                   // Turn off
+{"state": "ON", "brightness": 128} // Turn on with brightness
+{"brightness": 200}                // Set brightness (auto-turns on)
+```
+
+**State Updates:**
+The device publishes its current state:
+```json
+{"state": "ON", "brightness": 255}
+```
+
+### Home Assistant Configuration
+
+Add to your `configuration.yaml`:
+
+```yaml
+mqtt:
+  light:
+    - name: "Smart Power Light"
+      unique_id: "smart_power_light_1"
+      command_topic: "home/light/YOUR_BOARD_ID/set"
+      state_topic: "home/light/YOUR_BOARD_ID/state"
+      schema: json
+      brightness: true
+      optimistic: false
+```
+
+Replace `YOUR_BOARD_ID` with the value from your `settings.toml`.
+
+### Testing with MQTT Client
+
+```bash
+# Turn on
+mosquitto_pub -h YOUR_BROKER -t "home/light/YOUR_BOARD_ID/set" -m '{"state":"ON"}'
+
+# Turn off
+mosquitto_pub -h YOUR_BROKER -t "home/light/YOUR_BOARD_ID/set" -m '{"state":"OFF"}'
+
+# Set brightness
+mosquitto_pub -h YOUR_BROKER -t "home/light/YOUR_BOARD_ID/set" -m '{"brightness":128}'
+
+# Subscribe to state updates
+mosquitto_sub -h YOUR_BROKER -t "home/light/YOUR_BOARD_ID/state"
+```
 
 ## Development Workflow
 

@@ -1,3 +1,4 @@
+import json
 import os
 import time
 
@@ -15,8 +16,9 @@ try:
     MQTT_BROKER = os.getenv("MQTT_BROKER")
     MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
     BOARD_ID = os.getenv("BOARD_ID")  # Unique identifier for this board
-    # Build MQTT topic from board ID, or use explicit topic if provided
-    MQTT_TOPIC = os.getenv("MQTT_TOPIC") or f"home/light/{BOARD_ID}"
+    # MQTT topics for JSON schema
+    MQTT_COMMAND_TOPIC = os.getenv("MQTT_COMMAND_TOPIC") or f"home/light/{BOARD_ID}/set"
+    MQTT_STATE_TOPIC = os.getenv("MQTT_STATE_TOPIC") or f"home/light/{BOARD_ID}/state"
 except:
     print("Settings are kept in settings.toml, please add them there!")
     raise
@@ -28,7 +30,35 @@ pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.3, auto_write=False)
 # Initialize LED on pin A2
 led_a2 = DigitalInOut(board.A2)
 led_a2.direction = Direction.OUTPUT
-led_a2.value = True  # Start with LED on by default
+
+# Light state
+light_state = {
+    "state": "ON",
+    "brightness": 255,  # 0-255
+}
+last_brightness = 255  # Remember last non-zero brightness
+
+
+def set_led_brightness(brightness):
+    """Set LED brightness (0-255). For digital LED, treat as on/off threshold."""
+    global last_brightness
+    if brightness > 0:
+        led_a2.value = True
+        light_state["brightness"] = brightness
+        last_brightness = brightness  # Remember this brightness
+    else:
+        led_a2.value = False
+        light_state["brightness"] = 0
+
+
+def publish_state(client):
+    """Publish current state to MQTT."""
+    try:
+        state_json = json.dumps(light_state)
+        client.publish(MQTT_STATE_TOPIC, state_json)
+        print(f"Published state: {state_json}")
+    except Exception as e:
+        print(f"Failed to publish state: {e}")
 
 
 # Helper function for color wheel
@@ -71,14 +101,37 @@ pool = socketpool.SocketPool(wifi.radio)
 
 # MQTT callback function
 def message_received(client, topic, message):
+    global last_brightness
     print(f"Topic: {topic}, Message: {message}")
 
-    if topic == MQTT_TOPIC:
-        # Expected format: "on" or "off"
-        if message.lower() == "on":
-            led_a2.value = True
-        elif message.lower() == "off":
-            led_a2.value = False
+    if topic == MQTT_COMMAND_TOPIC:
+        try:
+            # Parse JSON payload
+            payload = json.loads(message)
+
+            # Handle state
+            if "state" in payload:
+                if payload["state"] == "OFF":
+                    led_a2.value = False
+                    light_state["state"] = "OFF"
+                    light_state["brightness"] = 0
+                elif payload["state"] == "ON":
+                    # Use brightness from payload, or restore last brightness
+                    brightness = payload.get("brightness", last_brightness)
+                    set_led_brightness(brightness)
+                    light_state["state"] = "ON"
+
+            # Handle brightness change (without explicit state)
+            elif "brightness" in payload:
+                brightness = int(payload["brightness"])
+                set_led_brightness(brightness)
+                light_state["state"] = "ON" if brightness > 0 else "OFF"
+
+            # Publish updated state
+            publish_state(client)
+
+        except Exception as e:
+            print(f"Error parsing message: {e}")
 
 
 # Set up MQTT client
@@ -91,9 +144,15 @@ mqtt_client.on_message = message_received
 print(f"Connecting to MQTT broker at {MQTT_BROKER}...")
 mqtt_client.connect()
 
-# Subscribe to topic
-mqtt_client.subscribe(MQTT_TOPIC)
-print(f"Subscribed to topic: {MQTT_TOPIC}")
+# Subscribe to command topic
+mqtt_client.subscribe(MQTT_COMMAND_TOPIC)
+print(f"Subscribed to topic: {MQTT_COMMAND_TOPIC}")
+print(f"Publishing state to: {MQTT_STATE_TOPIC}")
+print(f"Listening for commands on: {MQTT_COMMAND_TOPIC}")
+
+# Publish initial state
+set_led_brightness(255)  # Start with LED on
+publish_state(mqtt_client)
 
 # Stage 4: Ready - Green
 print("Stage 4: Ready! Starting color wheel...")
@@ -103,6 +162,9 @@ time.sleep(1)
 
 # Main loop - Color wheel with MQTT monitoring
 color_position = 0
+last_state_publish = time.monotonic()
+STATE_PUBLISH_INTERVAL = 60  # Publish state every 60 seconds
+
 while True:
     try:
         # Update color wheel
@@ -112,6 +174,12 @@ while True:
 
         # Check for MQTT messages
         mqtt_client.loop()
+
+        # Periodically publish state
+        if time.monotonic() - last_state_publish > STATE_PUBLISH_INTERVAL:
+            publish_state(mqtt_client)
+            last_state_publish = time.monotonic()
+
         time.sleep(0.05)
     except Exception as e:
         print(f"Error: {e}")
@@ -120,5 +188,6 @@ while True:
         time.sleep(5)
         try:
             mqtt_client.reconnect()
+            publish_state(mqtt_client)
         except Exception as e:
             print(f"Reconnect failed: {e}")
