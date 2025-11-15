@@ -28,6 +28,7 @@ pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.3, auto_write=False)
 # Initialize LED on pin A2
 led_a2 = DigitalInOut(board.A2)
 led_a2.direction = Direction.OUTPUT
+led_a2.value = True  # Start with LED on by default
 
 
 # Helper function for color wheel
