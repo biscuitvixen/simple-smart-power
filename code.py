@@ -73,19 +73,7 @@ pool = socketpool.SocketPool(wifi.radio)
 def message_received(client, topic, message):
     print(f"Topic: {topic}, Message: {message}")
 
-    if topic == MQTT_TOPIC_NEOPIXEL:
-        # Expected format: "R,G,B" or "off"
-        if message.lower() == "off":
-            pixel[0] = (0, 0, 0)
-        else:
-            try:
-                r, g, b = map(int, message.split(","))
-                pixel[0] = (r, g, b)
-            except:
-                print("Invalid NeoPixel color format")
-        pixel.show()
-
-    elif topic == MQTT_TOPIC_A2:
+    if topic == MQTT_TOPIC:
         # Expected format: "on" or "off"
         if message.lower() == "on":
             led_a2.value = True
@@ -103,10 +91,9 @@ mqtt_client.on_message = message_received
 print(f"Connecting to MQTT broker at {MQTT_BROKER}...")
 mqtt_client.connect()
 
-# Subscribe to topics
-mqtt_client.subscribe(MQTT_TOPIC_NEOPIXEL)
-mqtt_client.subscribe(MQTT_TOPIC_A2)
-print("Subscribed to MQTT topics")
+# Subscribe to topic
+mqtt_client.subscribe(MQTT_TOPIC)
+print(f"Subscribed to topic: {MQTT_TOPIC}")
 
 # Stage 4: Ready - Green
 print("Stage 4: Ready! Starting color wheel...")
