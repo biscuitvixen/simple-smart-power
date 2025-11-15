@@ -120,5 +120,5 @@ while True:
         time.sleep(5)
         try:
             mqtt_client.reconnect()
-        except:
-            pass
+        except Exception as e:
+            print(f"Reconnect failed: {e}")
