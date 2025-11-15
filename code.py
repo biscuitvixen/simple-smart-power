@@ -7,7 +7,7 @@ import board
 import neopixel
 import socketpool
 import wifi
-from digitalio import DigitalInOut, Direction
+from pwmio import PWMOut
 
 # Get credentials from settings.toml
 try:
@@ -27,9 +27,8 @@ except:
 # The built-in NeoPixel is on pin NEOPIXEL
 pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.3, auto_write=False)
 
-# Initialize LED on pin A2
-led_a2 = DigitalInOut(board.A2)
-led_a2.direction = Direction.OUTPUT
+# Initialize LED on pin A2 with PWM for brightness control
+led_a2 = PWMOut(board.A2, frequency=5000, duty_cycle=0)
 
 # Light state
 light_state = {
@@ -40,14 +39,16 @@ last_brightness = 255  # Remember last non-zero brightness
 
 
 def set_led_brightness(brightness):
-    """Set LED brightness (0-255). For digital LED, treat as on/off threshold."""
+    """Set LED brightness (0-255) using PWM."""
     global last_brightness
     if brightness > 0:
-        led_a2.value = True
+        # Convert 0-255 to 0-65535 (PWM duty cycle range)
+        duty_cycle = int((brightness / 255) * 65535)
+        led_a2.duty_cycle = duty_cycle
         light_state["brightness"] = brightness
         last_brightness = brightness  # Remember this brightness
     else:
-        led_a2.value = False
+        led_a2.duty_cycle = 0
         light_state["brightness"] = 0
 
 
