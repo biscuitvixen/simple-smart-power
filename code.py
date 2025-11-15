@@ -61,6 +61,34 @@ def publish_state(client):
         print(f"Failed to publish state: {e}")
 
 
+def publish_discovery(client):
+    """Publish Home Assistant MQTT Discovery message."""
+    try:
+        discovery_topic = f"homeassistant/light/{BOARD_ID}/config"
+
+        discovery_payload = {
+            "name": "Divider Light",
+            "unique_id": BOARD_ID,
+            "command_topic": MQTT_COMMAND_TOPIC,
+            "state_topic": MQTT_STATE_TOPIC,
+            "schema": "json",
+            "brightness": True,
+            "brightness_scale": 255,
+            "optimistic": False,
+            "device": {
+                "identifiers": [BOARD_ID],
+                "name": f"Smart Power {BOARD_ID}",
+                "model": "QT Py ESP32-S2",
+                "manufacturer": "Adafruit",
+            },
+        }
+
+        client.publish(discovery_topic, json.dumps(discovery_payload), retain=True)
+        print(f"Published discovery to: {discovery_topic}")
+    except Exception as e:
+        print(f"Failed to publish discovery: {e}")
+
+
 # Helper function for color wheel
 def wheel(pos):
     # Input a value 0 to 255 to get a color value.
@@ -143,6 +171,9 @@ mqtt_client.on_message = message_received
 # Connect to MQTT broker
 print(f"Connecting to MQTT broker at {MQTT_BROKER}...")
 mqtt_client.connect()
+
+# Publish discovery message for Home Assistant
+publish_discovery(mqtt_client)
 
 # Subscribe to command topic
 mqtt_client.subscribe(MQTT_COMMAND_TOPIC)
