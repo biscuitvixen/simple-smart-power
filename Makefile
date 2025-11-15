@@ -1,6 +1,7 @@
 .PHONY: deploy deploy-all libs monitor setup list clean-device pull help
 
 PORT ?= /dev/ttyACM0
+MOUNT_PATH ?= /run/media/$(USER)/CIRCUITPY
 
 help:
 	@echo "CircuitPython Development Makefile"
@@ -28,19 +29,35 @@ setup:
 	fi
 
 deploy:
-	@echo "Deploying code.py to $(PORT)..."
-	@ampy --port $(PORT) put code.py
-	@echo "✓ Deployment complete"
+	@echo "Deploying code.py..."
+	@if [ -d "$(MOUNT_PATH)" ]; then \
+		echo "Using mounted filesystem at $(MOUNT_PATH)..."; \
+		cp code.py $(MOUNT_PATH)/code.py; \
+		sync; \
+		echo "✓ Deployment complete"; \
+	else \
+		echo "ERROR: CIRCUITPY not mounted at $(MOUNT_PATH)"; \
+		echo "Please mount the device first or check MOUNT_PATH"; \
+		exit 1; \
+	fi
 
 deploy-all:
-	@echo "Deploying all files to $(PORT)..."
-	@ampy --port $(PORT) put code.py
-	@if [ -f settings.toml ]; then \
-		ampy --port $(PORT) put settings.toml; \
+	@echo "Deploying all files..."
+	@if [ -d "$(MOUNT_PATH)" ]; then \
+		echo "Using mounted filesystem at $(MOUNT_PATH)..."; \
+		cp code.py $(MOUNT_PATH)/code.py; \
+		if [ -f settings.toml ]; then \
+			cp settings.toml $(MOUNT_PATH)/settings.toml; \
+		else \
+			echo "⚠ settings.toml not found, skipping"; \
+		fi; \
+		sync; \
+		echo "✓ Deployment complete"; \
 	else \
-		echo "⚠ settings.toml not found, skipping"; \
+		echo "ERROR: CIRCUITPY not mounted at $(MOUNT_PATH)"; \
+		echo "Please mount the device first or check MOUNT_PATH"; \
+		exit 1; \
 	fi
-	@echo "✓ Deployment complete"
 
 libs:
 	@echo "Installing/updating CircuitPython libraries..."
@@ -53,15 +70,31 @@ monitor:
 	@screen $(PORT) 115200
 
 list:
-	@echo "Listing files on device at $(PORT)..."
-	@ampy --port $(PORT) ls
+	@echo "Listing files on device..."
+	@if [ -d "$(MOUNT_PATH)" ]; then \
+		ls -lh $(MOUNT_PATH)/; \
+	else \
+		echo "ERROR: CIRCUITPY not mounted at $(MOUNT_PATH)"; \
+		exit 1; \
+	fi
 
 pull:
 	@echo "Pulling code.py from device..."
-	@ampy --port $(PORT) get code.py > code.py.backup
-	@echo "✓ Saved to code.py.backup"
+	@if [ -d "$(MOUNT_PATH)" ]; then \
+		cp $(MOUNT_PATH)/code.py code.py.backup; \
+		echo "✓ Saved to code.py.backup"; \
+	else \
+		echo "ERROR: CIRCUITPY not mounted at $(MOUNT_PATH)"; \
+		exit 1; \
+	fi
 
 clean-device:
 	@echo "Removing code.py from device..."
-	@ampy --port $(PORT) rm code.py
-	@echo "✓ code.py removed"
+	@if [ -d "$(MOUNT_PATH)" ]; then \
+		rm -f $(MOUNT_PATH)/code.py; \
+		sync; \
+		echo "✓ code.py removed"; \
+	else \
+		echo "ERROR: CIRCUITPY not mounted at $(MOUNT_PATH)"; \
+		exit 1; \
+	fi
