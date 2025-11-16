@@ -68,7 +68,7 @@ def publish_discovery(client):
         discovery_topic = f"homeassistant/light/{BOARD_ID}/config"
 
         discovery_payload = {
-            "name": "Divider Light",
+            "name": "simple-smart-power-light",
             "unique_id": BOARD_ID,
             "command_topic": MQTT_COMMAND_TOPIC,
             "state_topic": MQTT_STATE_TOPIC,
