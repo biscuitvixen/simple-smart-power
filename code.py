@@ -141,7 +141,7 @@ def message_received(client, topic, message):
             # Handle state
             if "state" in payload:
                 if payload["state"] == "OFF":
-                    led_a2.value = False
+                    led_a2.duty_cycle = 0
                     light_state["state"] = "OFF"
                     light_state["brightness"] = 0
                 elif payload["state"] == "ON":
