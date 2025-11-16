@@ -6,6 +6,8 @@ dependencies:
   - python=3.11
   - ruff
   - pip
+  - esptool
+  - mosquitto
   - pip:
       - mpremote
       - circup
