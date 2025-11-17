@@ -3,6 +3,7 @@ import os
 import time
 
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
+import alarm
 import board
 import neopixel
 import socketpool
@@ -196,6 +197,7 @@ time.sleep(1)
 color_position = 0
 last_state_publish = time.monotonic()
 STATE_PUBLISH_INTERVAL = 60  # Publish state every 60 seconds
+SLEEP_DURATION = 10  # Light sleep duration in seconds
 
 while True:
     try:
@@ -212,7 +214,17 @@ while True:
             publish_state(mqtt_client)
             last_state_publish = time.monotonic()
 
-        time.sleep(0.05)
+        # Enter light sleep to save power
+        # Sleep will cause a delay in MQTT responsiveness
+        print(f"Entering light sleep for {SLEEP_DURATION}s...")
+        time_alarm = alarm.time.TimeAlarm(
+            monotonic_time=time.monotonic() + SLEEP_DURATION
+        )
+        alarm.light_sleep_until_alarms(time_alarm)
+        print("Woke from light sleep")
+
+        # Sleep timer not needed after light sleep
+        # time.sleep(0.05)
     except Exception as e:
         print(f"Error: {e}")
         pixel[0] = (255, 0, 0)  # Red on error
