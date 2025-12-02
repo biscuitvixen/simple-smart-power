@@ -199,6 +199,71 @@ make deploy PORT=/dev/ttyUSB0
 minicom -D /dev/ttyACM0 -b 115200
 ```
 
+## Device Ports & Firmware Flashing
+
+### Find Device Ports
+
+- Windows (PowerShell):
+   ```pwsh
+   # List all serial ports
+   Get-CimInstance Win32_SerialPort | Select-Object Name, DeviceID
+
+   # Quick view of COM ports only
+   Get-ChildItem HKLM:\HARDWARE\DEVICEMAP\SERIALCOMM | Select-Object -ExpandProperty Property
+   Get-ChildItem HKLM:\HARDWARE\DEVICEMAP\SERIALCOMM | ForEach-Object { $_.GetValue('') }
+   ```
+
+- Linux:
+   ```bash
+   ls /dev/ttyACM* /dev/ttyUSB* 2>/dev/null
+   dmesg | grep -Ei "(ttyACM|ttyUSB)"
+   ```
+
+Use the detected port (e.g., `COM5` on Windows or `/dev/ttyACM0` on Linux) in tasks and commands.
+
+### Erase & Flash Firmware (esptool)
+
+For QT Py ESP32-S2 (or similar ESP32-S2 boards). Make sure you have `esptool` installed and know your serial port.
+
+- Install `esptool`:
+   ```pwsh
+   # Windows (PowerShell)
+   python -m pip install esptool
+   ```
+   ```bash
+   # Linux
+   python3 -m pip install esptool
+   ```
+
+- Put board in bootloader mode: hold BOOT (or 0) while pressing RESET, then release RESET first.
+
+- Erase flash:
+   ```pwsh
+   # Windows
+   esptool.py --chip esp32s2 --port COM5 erase-flash
+   ```
+   ```bash
+   # Linux
+   esptool.py --chip esp32s2 --port /dev/ttyACM0 erase-flash
+   ```
+
+- Flash CircuitPython firmware (.bin): download the ESP32-S2 "combined" `.bin` from CircuitPython releases, then:
+   ```pwsh
+   # Windows
+   esptool.py --chip esp32s2 --port COM5 --baud 460800 write-flash -z 0x0000 path\to\firmware.bin
+   ```
+   ```bash
+   # Linux
+   esptool.py --chip esp32s2 --port /dev/ttyACM0 --baud 460800 write-flash -z 0x0000 /path/to/firmware.bin
+   ```
+
+- After flashing, press RESET. The `CIRCUITPY` drive should mount; then deploy `code.py` and `settings.toml`.
+
+Notes:
+- Replace `COM5` or `/dev/ttyACM0` with your actual port.
+- If flashing fails, try lowering baud (e.g., `115200`) or unplug/replug the device.
+- For other ESP32 variants, adjust `--chip` accordingly (e.g., `esp32`, `esp32s3`).
+
 ## Project Structure
 
 ```
