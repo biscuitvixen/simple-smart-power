@@ -239,7 +239,7 @@ time.sleep(1)
 color_position = 0
 last_state_publish = time.monotonic()
 STATE_PUBLISH_INTERVAL = 60  # Publish state every 60 seconds
-SLEEP_DURATION = 10  # Light sleep duration in seconds
+SLEEP_DURATION = 10 if not USE_TOUCH_SWITCH else 0.05  # Short sleep if touch enabled
 
 while True:
     try:
@@ -267,17 +267,19 @@ while True:
             publish_state(mqtt_client)
             last_state_publish = time.monotonic()
 
-        # Enter light sleep to save power
-        # Sleep will cause a delay in MQTT responsiveness
-        print(f"Entering light sleep for {SLEEP_DURATION}s...")
-        time_alarm = alarm.time.TimeAlarm(
-            monotonic_time=time.monotonic() + SLEEP_DURATION
-        )
-        alarm.light_sleep_until_alarms(time_alarm)
-        print("Woke from light sleep")
+        # Use light sleep only if touch switch is disabled
+        if USE_TOUCH_SWITCH:
+            # Short sleep to keep touch responsive
+            time.sleep(SLEEP_DURATION)
+        else:
+            # Enter light sleep to save power when touch not needed
+            print(f"Entering light sleep for {SLEEP_DURATION}s...")
+            time_alarm = alarm.time.TimeAlarm(
+                monotonic_time=time.monotonic() + SLEEP_DURATION
+            )
+            alarm.light_sleep_until_alarms(time_alarm)
+            print("Woke from light sleep")
 
-        # Sleep timer not needed after light sleep
-        # time.sleep(0.05)
     except Exception as e:
         print(f"Error: {e}")
         if pixel:
