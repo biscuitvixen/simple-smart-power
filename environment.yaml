@@ -12,3 +12,4 @@ dependencies:
       - mpremote
       - circup
       - adafruit-ampy
+      - pyserial
