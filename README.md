@@ -199,6 +199,60 @@ make deploy PORT=/dev/ttyUSB0
 minicom -D /dev/ttyACM0 -b 115200
 ```
 
+**CIRCUITPY drive not mounting:**
+- If the CIRCUITPY USB drive isn't appearing, you can still deploy via serial (see below).
+- Alternatively, enable Web Workflow in `settings.toml` and use the device's IP address with `circup --host <IP>`.
+
+### Deploy Libraries over Serial (ampy)
+
+If CIRCUITPY is not mounting, you can push files via serial. ampy doesn't handle directories recursively, so use a helper script to upload everything under `lib/`.
+
+**Windows (PowerShell):**
+```pwsh
+# Set your COM port
+$PORT = "COM5"
+
+# Upload code and settings
+ampy --port $PORT put .\code.py
+ampy --port $PORT put .\settings.toml
+
+# Upload libraries from lib/ recursively
+Get-ChildItem -Recurse -File .\lib | ForEach-Object {
+  $rel = $_.FullName.Substring((Resolve-Path ".").Path.Length + 1)
+  $relPosix = $rel -replace '\\','/'
+  ampy --port $PORT put $_.FullName $relPosix
+}
+
+# Verify on device
+ampy --port $PORT ls
+ampy --port $PORT ls /lib
+```
+
+**Linux:**
+```bash
+PORT=/dev/ttyACM0
+
+# Upload code and settings
+ampy --port "$PORT" put ./code.py
+ampy --port "$PORT" put ./settings.toml
+
+# Upload libraries recursively
+find ./lib -type f -print0 | while IFS= read -r -d '' f; do
+  rel="${f#./}"
+  ampy --port "$PORT" put "$f" "$rel"
+done
+
+# Verify on device
+ampy --port "$PORT" ls
+ampy --port "$PORT" ls /lib
+```
+
+**Tips:**
+- Ensure the board is running CircuitPython (REPL accessible).
+- If uploads fail intermittently, press reset once and retry.
+- Large transfers are more reliable via CIRCUITPY drive or Web Workflow.
+- For faster/bulk library management, prefer `circup` when CIRCUITPY or Web Workflow is available.
+
 ## Device Ports & Firmware Flashing
 
 ### Find Device Ports
