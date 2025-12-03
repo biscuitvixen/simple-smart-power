@@ -14,9 +14,5 @@ BOARD_ID = "kitchen_light"
 # Optional: Enable/disable built-in NeoPixel (defaults to true)
 USE_NEOPIXEL = "true"
 
-# Optional: Enable capacitive touch switch (defaults to false)
-USE_TOUCH_SWITCH = "false"
-TOUCH_PIN = "A1"  # Pin for capacitive touch (A0, A1, A2, A3, etc.)
-
 # Optional: Override the auto-generated MQTT topic (home/light/{BOARD_ID})
 # MQTT_TOPIC = "custom/topic/path"

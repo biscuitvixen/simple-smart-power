@@ -7,7 +7,6 @@ import alarm
 import board
 import neopixel
 import socketpool
-import touchio
 import wifi
 from pwmio import PWMOut
 
@@ -23,13 +22,6 @@ try:
     MQTT_STATE_TOPIC = os.getenv("MQTT_STATE_TOPIC") or f"home/light/{BOARD_ID}/state"
     # Optional NeoPixel (defaults to True for backward compatibility)
     USE_NEOPIXEL = os.getenv("USE_NEOPIXEL", "true").lower() in ("true", "1", "yes")
-    # Optional capacitive touch switch
-    USE_TOUCH_SWITCH = os.getenv("USE_TOUCH_SWITCH", "false").lower() in (
-        "true",
-        "1",
-        "yes",
-    )
-    TOUCH_PIN = os.getenv("TOUCH_PIN", "A1")  # Default to A1Do I need
 except:
     print("Settings are kept in settings.toml, please add them there!")
     raise
@@ -45,35 +37,12 @@ else:
 # Initialize LED on pin A2 with PWM for brightness control
 led_a2 = PWMOut(board.A2, frequency=5000, duty_cycle=0)
 
-# Initialize capacitive touch switch (if enabled)
-touch = None
-touch_was_pressed = False
-if USE_TOUCH_SWITCH:
-    try:
-        touch_pin = getattr(board, TOUCH_PIN)
-        touch = touchio.TouchIn(touch_pin)
-        print(f"Capacitive touch switch enabled on pin {TOUCH_PIN}")
-    except Exception as e:
-        print(f"Failed to initialize touch on pin {TOUCH_PIN}: {e}")
-        touch = None
-
 # Light state
 light_state = {
     "state": "ON",
     "brightness": 255,  # 0-255
 }
 last_brightness = 255  # Remember last non-zero brightness
-
-
-def toggle_light():
-    """Toggle light on/off."""
-    if light_state["state"] == "ON":
-        set_led_brightness(0)
-        light_state["state"] = "OFF"
-    else:
-        set_led_brightness(last_brightness)
-        light_state["state"] = "ON"
-    print(f"Light toggled to: {light_state['state']}")
 
 
 def set_led_brightness(brightness):
@@ -243,16 +212,6 @@ SLEEP_DURATION = 10 if not USE_TOUCH_SWITCH else 0.05  # Short sleep if touch en
 
 while True:
     try:
-        # Check capacitive touch switch (if enabled)
-        if touch:
-            touch_pressed = touch.value
-            if touch_pressed and not touch_was_pressed:
-                # Touch detected (rising edge)
-                print("Touch detected - toggling light")
-                toggle_light()
-                publish_state(mqtt_client)
-            touch_was_pressed = touch_pressed
-
         # Update color wheel (if NeoPixel enabled)
         if pixel:
             pixel[0] = wheel(color_position)
