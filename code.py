@@ -5,6 +5,7 @@ import time
 import adafruit_minimqtt.adafruit_minimqtt as MQTT
 import alarm
 import board
+import microcontroller
 import neopixel
 import socketpool
 import wifi
@@ -20,8 +21,16 @@ try:
     # MQTT topics for JSON schema
     MQTT_COMMAND_TOPIC = os.getenv("MQTT_COMMAND_TOPIC") or f"home/light/{BOARD_ID}/set"
     MQTT_STATE_TOPIC = os.getenv("MQTT_STATE_TOPIC") or f"home/light/{BOARD_ID}/state"
-    # Optional NeoPixel (defaults to True for backward compatibility)
-    USE_NEOPIXEL = os.getenv("USE_NEOPIXEL", "true").lower() in ("true", "1", "yes")
+
+    # Auto-detect NeoPixel based on chip type
+    chip_name = microcontroller.cpu.name
+    has_neopixel = "ESP32S2" in chip_name  # QT Py ESP32-S2 has NeoPixel
+    # Allow manual override from settings
+    USE_NEOPIXEL = os.getenv("USE_NEOPIXEL", str(has_neopixel)).lower() in (
+        "true",
+        "1",
+        "yes",
+    )
 except:
     print("Settings are kept in settings.toml, please add them there!")
     raise
@@ -29,10 +38,15 @@ except:
 # Initialize the NeoPixel on the QT Py ESP32-S2 (if enabled)
 # The built-in NeoPixel is on pin NEOPIXEL
 if USE_NEOPIXEL:
-    pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.3, auto_write=False)
+    try:
+        pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.3, auto_write=False)
+        print(f"NeoPixel enabled (detected: {chip_name})")
+    except Exception as e:
+        print(f"Failed to initialize NeoPixel: {e}")
+        pixel = None
 else:
     pixel = None
-    print("NeoPixel disabled in settings")
+    print(f"NeoPixel disabled (detected: {chip_name})")
 
 # Initialize LED on pin A2 with PWM for brightness control
 led_a2 = PWMOut(board.A2, frequency=5000, duty_cycle=0)
