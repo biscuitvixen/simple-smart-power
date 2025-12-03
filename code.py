@@ -20,13 +20,19 @@ try:
     # MQTT topics for JSON schema
     MQTT_COMMAND_TOPIC = os.getenv("MQTT_COMMAND_TOPIC") or f"home/light/{BOARD_ID}/set"
     MQTT_STATE_TOPIC = os.getenv("MQTT_STATE_TOPIC") or f"home/light/{BOARD_ID}/state"
+    # Optional NeoPixel (defaults to True for backward compatibility)
+    USE_NEOPIXEL = os.getenv("USE_NEOPIXEL", "true").lower() in ("true", "1", "yes")
 except:
     print("Settings are kept in settings.toml, please add them there!")
     raise
 
-# Initialize the NeoPixel on the QT Py ESP32-S2
+# Initialize the NeoPixel on the QT Py ESP32-S2 (if enabled)
 # The built-in NeoPixel is on pin NEOPIXEL
-pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.3, auto_write=False)
+if USE_NEOPIXEL:
+    pixel = neopixel.NeoPixel(board.NEOPIXEL, 1, brightness=0.3, auto_write=False)
+else:
+    pixel = None
+    print("NeoPixel disabled in settings")
 
 # Initialize LED on pin A2 with PWM for brightness control
 led_a2 = PWMOut(board.A2, frequency=5000, duty_cycle=0)
@@ -108,22 +114,25 @@ def wheel(pos):
 
 # Stage 1: Initializing - Red
 print("Stage 1: Initializing...")
-pixel[0] = (255, 0, 0)
-pixel.show()
+if pixel:
+    pixel[0] = (255, 0, 0)
+    pixel.show()
 time.sleep(0.5)
 
 # Stage 2: Connecting to WiFi - Yellow
 print(f"Stage 2: Connecting to {WIFI_SSID}...")
-pixel[0] = (255, 255, 0)
-pixel.show()
+if pixel:
+    pixel[0] = (255, 255, 0)
+    pixel.show()
 wifi.radio.connect(WIFI_SSID, WIFI_PASSWORD)
 print(f"Connected to {WIFI_SSID}!")
 print(f"IP address: {wifi.radio.ipv4_address}")
 
 # Stage 3: Setting up MQTT - Blue
 print("Stage 3: Setting up MQTT...")
-pixel[0] = (0, 0, 255)
-pixel.show()
+if pixel:
+    pixel[0] = (0, 0, 255)
+    pixel.show()
 
 # Create a socket pool
 pool = socketpool.SocketPool(wifi.radio)
@@ -188,9 +197,11 @@ set_led_brightness(255)  # Start with LED on
 publish_state(mqtt_client)
 
 # Stage 4: Ready - Green
-print("Stage 4: Ready! Starting color wheel...")
-pixel[0] = (0, 255, 0)
-pixel.show()
+print("Stage 4: Ready!")
+if pixel:
+    print("Starting color wheel...")
+    pixel[0] = (0, 255, 0)
+    pixel.show()
 time.sleep(1)
 
 # Main loop - Color wheel with MQTT monitoring
@@ -201,10 +212,11 @@ SLEEP_DURATION = 10  # Light sleep duration in seconds
 
 while True:
     try:
-        # Update color wheel
-        pixel[0] = wheel(color_position)
-        pixel.show()
-        color_position = (color_position + 1) % 256
+        # Update color wheel (if NeoPixel enabled)
+        if pixel:
+            pixel[0] = wheel(color_position)
+            pixel.show()
+            color_position = (color_position + 1) % 256
 
         # Check for MQTT messages
         mqtt_client.loop()
@@ -227,8 +239,9 @@ while True:
         # time.sleep(0.05)
     except Exception as e:
         print(f"Error: {e}")
-        pixel[0] = (255, 0, 0)  # Red on error
-        pixel.show()
+        if pixel:
+            pixel[0] = (255, 0, 0)  # Red on error
+            pixel.show()
         time.sleep(5)
         try:
             mqtt_client.reconnect()
