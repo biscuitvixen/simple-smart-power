@@ -9,7 +9,7 @@
     "python.analysis.extraPaths": [
         "/home/biscuit/.vscode/extensions/joedevivo.vscode-circuitpython-0.2.0-linux-x64/boards/0x239A/0x8112",
         "/home/biscuit/.vscode/extensions/joedevivo.vscode-circuitpython-0.2.0-linux-x64/stubs",
-        "/home/biscuit/.config/Code/User/globalStorage/joedevivo.vscode-circuitpython/bundle/20251114/adafruit-circuitpython-bundle-py-20251114/lib"
+        "/home/biscuit/.config/Code/User/globalStorage/joedevivo.vscode-circuitpython/bundle/20251202/adafruit-circuitpython-bundle-py-20251202/lib"
     ],
     "circuitpython.board.version": null,
     "circuitpython.board.vid": "0x239A",
@@ -36,5 +36,6 @@
         "F",
         "I"
     ],
-    "ruff.format.docstringCodeFormat": true
+    "ruff.format.docstringCodeFormat": true,
+    "makefile.configureOnOpen": true
 }
