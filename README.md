@@ -205,7 +205,7 @@ minicom -D /dev/ttyACM0 -b 115200
 
 ### Deploy Libraries over Serial (ampy)
 
-If CIRCUITPY is not mounting, you can push files via serial. ampy doesn't handle directories recursively, so use a helper script to upload everything under `lib/`.
+If CIRCUITPY is not mounting, you can push files via serial. ampy doesn't handle directories recursively and requires directories to exist before uploading files.
 
 **Windows (PowerShell):**
 ```pwsh
@@ -217,9 +217,19 @@ ampy --port $PORT put .\code.py
 ampy --port $PORT put .\settings.toml
 
 # Upload libraries from lib/ recursively
+# First, create all directories
+Get-ChildItem -Recurse -Directory .\lib | ForEach-Object {
+  $rel = $_.FullName.Substring((Resolve-Path ".").Path.Length + 1)
+  $relPosix = $rel -replace '\\','/'
+  Write-Host "Creating directory: $relPosix"
+  ampy --port $PORT mkdir $relPosix 2>$null  # Ignore errors if dir exists
+}
+
+# Then, upload all files
 Get-ChildItem -Recurse -File .\lib | ForEach-Object {
   $rel = $_.FullName.Substring((Resolve-Path ".").Path.Length + 1)
   $relPosix = $rel -replace '\\','/'
+  Write-Host "Uploading: $relPosix"
   ampy --port $PORT put $_.FullName $relPosix
 }
 
@@ -237,8 +247,19 @@ ampy --port "$PORT" put ./code.py
 ampy --port "$PORT" put ./settings.toml
 
 # Upload libraries recursively
-find ./lib -type f -print0 | while IFS= read -r -d '' f; do
+# First, create all directories
+find ./lib -type d | while read -r d; do
+  rel="${d#./}"
+  if [ "$rel" != "lib" ]; then
+    echo "Creating directory: $rel"
+    ampy --port "$PORT" mkdir "$rel" 2>/dev/null || true
+  fi
+done
+
+# Then, upload all files
+find ./lib -type f | while read -r f; do
   rel="${f#./}"
+  echo "Uploading: $rel"
   ampy --port "$PORT" put "$f" "$rel"
 done
 
@@ -247,11 +268,52 @@ ampy --port "$PORT" ls
 ampy --port "$PORT" ls /lib
 ```
 
+**Alternative: Single PowerShell Script (Recommended)**
+
+Create a file `deploy-libs.ps1`:
+```pwsh
+param(
+    [string]$Port = "COM5"
+)
+
+Write-Host "Deploying libraries to $Port..." -ForegroundColor Green
+
+# Create directories first
+$dirs = Get-ChildItem -Recurse -Directory .\lib | Sort-Object FullName
+foreach ($dir in $dirs) {
+    $rel = $dir.FullName.Substring((Resolve-Path ".").Path.Length + 1) -replace '\\','/'
+    try {
+        Write-Host "  [DIR]  $rel" -ForegroundColor Yellow
+        ampy --port $Port mkdir $rel 2>$null
+    } catch {
+        # Directory might already exist, continue
+    }
+}
+
+# Upload files
+$files = Get-ChildItem -Recurse -File .\lib
+$count = 0
+foreach ($file in $files) {
+    $rel = $file.FullName.Substring((Resolve-Path ".").Path.Length + 1) -replace '\\','/'
+    Write-Host "  [FILE] $rel" -ForegroundColor Cyan
+    ampy --port $Port put $file.FullName $rel
+    $count++
+}
+
+Write-Host "`nUploaded $count files successfully!" -ForegroundColor Green
+```
+
+Run it:
+```pwsh
+.\deploy-libs.ps1 -Port COM5
+```
+
 **Tips:**
-- Ensure the board is running CircuitPython (REPL accessible).
-- If uploads fail intermittently, press reset once and retry.
-- Large transfers are more reliable via CIRCUITPY drive or Web Workflow.
-- For faster/bulk library management, prefer `circup` when CIRCUITPY or Web Workflow is available.
+- ampy requires parent directories to exist before uploading files.
+- If you get "No such file/directory" errors, ensure directories are created first.
+- The scripts above create directories, then upload files.
+- For large library sets, prefer CIRCUITPY drive or Web Workflow (much faster).
+- To verify: `ampy --port COM5 ls /lib` and `ampy --port COM5 ls /lib/adafruit_minimqtt`
 
 ## Device Ports & Firmware Flashing
 
