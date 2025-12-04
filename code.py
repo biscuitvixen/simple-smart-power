@@ -221,7 +221,9 @@ time.sleep(1)
 # Main loop - Color wheel with MQTT monitoring
 color_position = 0
 last_state_publish = time.monotonic()
+last_discovery_publish = time.monotonic()
 STATE_PUBLISH_INTERVAL = 60  # Publish state every 60 seconds
+DISCOVERY_PUBLISH_INTERVAL = 3600  # Re-advertise every 1 hour
 SLEEP_DURATION = 10
 
 while True:
@@ -240,6 +242,12 @@ while True:
             publish_state(mqtt_client)
             last_state_publish = time.monotonic()
 
+        # Periodically re-publish discovery (every hour)
+        if time.monotonic() - last_discovery_publish > DISCOVERY_PUBLISH_INTERVAL:
+            print("Re-publishing discovery...")
+            publish_discovery(mqtt_client)
+            last_discovery_publish = time.monotonic()
+
         # Enter light sleep to save power
         print(f"Entering light sleep for {SLEEP_DURATION}s...")
         time_alarm = alarm.time.TimeAlarm(
@@ -256,6 +264,7 @@ while True:
         time.sleep(5)
         try:
             mqtt_client.reconnect()
+            publish_discovery(mqtt_client)  # Re-advertise after reconnection
             publish_state(mqtt_client)
         except Exception as e:
             print(f"Reconnect failed: {e}")
