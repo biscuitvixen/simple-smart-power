@@ -40,7 +40,7 @@ ENV/
 *~
 
 # VS Code - track tasks and settings for CircuitPython dev
-# .vscode/
+.vscode/
 
 # Logs
 *.log
