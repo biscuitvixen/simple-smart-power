@@ -175,11 +175,51 @@ mosquitto_sub -h YOUR_BROKER -t "home/light/YOUR_BOARD_ID/state"
 
 **Device not found:**
 ```bash
-# Find your device port
+# Find your device port (case-sensitive!)
 ls /dev/tty* | grep -E "(ACM|USB)"
 
 # Use custom port
 make deploy PORT=/dev/ttyUSB0
+```
+
+**Permission denied / Access errors:**
+```bash
+# Check which group owns the device
+ls -l /dev/ttyACM0
+
+# Add yourself to the appropriate group
+# Most systems: dialout
+sudo usermod -a -G dialout $USER
+# Arch/Manjaro: uucp
+sudo usermod -a -G uucp $USER
+
+# Log out and log back in for changes to take effect!
+```
+
+**Device busy / "failed to access" errors:**
+This usually means another program is using the serial port.
+
+```bash
+# Check what's using the port
+lsof /dev/ttyACM0
+# or
+fuser /dev/ttyACM0
+
+# Close any serial monitors (screen, minicom, etc.)
+# To exit screen: Ctrl+A then K then Y
+
+# Or kill the process directly
+kill <PID>
+```
+
+**Conda environment PATH issues:**
+```bash
+# Option 1: Use direct path to ampy
+./ENV/bin/ampy --port /dev/ttyACM0 put code.py
+
+# Option 2: Activate environment first
+conda activate usb-simplepower
+ampy --port /dev/ttyACM0 put code.py
 ```
 
 **CircuitPython not responding:**
