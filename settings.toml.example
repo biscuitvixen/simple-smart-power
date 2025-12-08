@@ -11,8 +11,5 @@ MQTT_PORT = "1883"
 # Board identifier (unique for each device)
 BOARD_ID = "kitchen_light"
 
-# Optional: Enable/disable built-in NeoPixel (defaults to true)
-USE_NEOPIXEL = "true"
-
 # Optional: Override the auto-generated MQTT topic (home/light/{BOARD_ID})
 # MQTT_TOPIC = "custom/topic/path"
